@@ -6,39 +6,41 @@
 /*   By: kagdas <kagdas@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/22 13:33:39 by kagdas            #+#    #+#             */
-/*   Updated: 2025/07/27 16:41:42 by kagdas           ###   ########.fr       */
+/*   Updated: 2025/07/29 19:21:51 by kagdas           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line_bonus.h"
 
-char	*ft_clean_buff(char *buff)
+char	*ft_clean_buff(char **buff)
 {
 	char	*new_buff;
 	int		i;
 
 	i = 0;
-	while (buff[i] && buff[i] != '\n')
+	while ((*buff)[i] && (*buff)[i] != '\n')
 		i++;
-	if (!buff[i])
+	if (!(*buff)[i])
 	{
-		free(buff);
+		free(*buff);
+		*buff = NULL;
 		return (NULL);
 	}
 	i++;
-	new_buff = ft_substr(buff, i, ft_strlen(buff) - i);
-	free(buff);
+	new_buff = ft_substr(*buff, i, ft_strlen(*buff) - i);
+	free(*buff);
+	*buff = NULL;
 	return (new_buff);
 }
+
 
 static char	*ft_extract_line(char *buff)
 {
 	int		i;
 	char	*line;
-
-	if (!buff[0] && !buff)
-		return (NULL);
 	i = 0;
+	if (!buff && !buff[i])
+		return (NULL);
 	while (buff[i] && buff[i] != '\n')
 		i++;
 	if (buff[i] == '\n')
@@ -47,7 +49,7 @@ static char	*ft_extract_line(char *buff)
 	return (line);
 }
 
-static char	*ft_readfile(int fd, char *buff)
+static char	*ft_readfile(int fd, char **buff)
 {
 	char	*temp;
 	int		cntrl;
@@ -57,23 +59,20 @@ static char	*ft_readfile(int fd, char *buff)
 	if (!temp)
 		return (NULL);
 	cntrl = 1;
-	while (!ft_strchr(buff, '\n') && cntrl != 0)
+	while (!ft_strchr(*buff, '\n') && cntrl > 0)
 	{
 		cntrl = read(fd, temp, BUFFER_SIZE);
 		if (cntrl == -1)
-			return (free(temp), free(buff), NULL);
+			return (free(temp), free(*buff), NULL);
 		temp[cntrl] = '\0';
-		new = ft_strjoin(buff, temp);
-		free(buff);
+		new = ft_strjoin(*buff, temp);
 		if (!new)
-		{
-			free(temp);
-			return (NULL);
-		}
-		buff = new;
+			return (free(temp), NULL);
+		free(*buff);
+		*buff = new;
 	}
 	free(temp);
-	return (buff);
+	return (*buff);
 }
 
 char	*get_next_line(int fd)
@@ -85,7 +84,7 @@ char	*get_next_line(int fd)
 		return (NULL);
 	if (!buff[fd])
 		buff[fd] = ft_calloc(1, 1);
-	buff[fd] = ft_readfile(fd, buff[fd]);
+	buff[fd] = ft_readfile(fd, &buff[fd]);
 	if (!buff[fd] || !*buff[fd])
 	{
 		free(buff[fd]);
@@ -93,6 +92,7 @@ char	*get_next_line(int fd)
 		return (NULL);
 	}
 	line = ft_extract_line(buff[fd]);
-	buff[fd] = ft_clean_buff(buff[fd]);
+	buff[fd] = ft_clean_buff(&buff[fd]);
+	
 	return (line);
 }
